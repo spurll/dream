@@ -11,14 +11,18 @@ from io import BytesIO
 
 import caffe
 
+#net_fn = 'deploy.prototxt'
+#param_fn = 'bvlc_googlenet.caffemodel'
+net_fn = 'deploy_places205.protxt'
+param_fn = 'googlelet_places205_train_iter_2400000.caffemodel'
+initial = 'IMG_1241.JPG'
+guide = 'wave224px.jpg'
+
 def showarray(a, fmt='jpeg'):
     a = numpy.uint8(numpy.clip(a, 0, 255))
     f = BytesIO()
     PIL.Image.fromarray(a).save(f, fmt)
     display(Image(data=f.getvalue()))
-
-net_fn = 'deploy.prototxt'
-param_fn = 'bvlc_googlenet.caffemodel'
 
 # Patching model to be able to compute gradients.
 # Note that you can also add "force_backward: true" line to "deploy.prototxt".
@@ -135,16 +139,44 @@ def deepdream(
     # Returning the resulting image
     return postprocess(net, src.data[0])
 
-frame = numpy.float32(PIL.Image.open('sky1280px.jpg'))
-# showarray(img)
+#frame = numpy.float32(PIL.Image.open(initial))
+#
+#frame_i = 0
+#h, w = frame.shape[:2]
+#s = 0.05                # Scaling coefficient
+#for i in range(200):
+#    frame = deepdream(net, frame)
+#    PIL.Image.fromarray(numpy.uint8(frame)).save("frames/%04d.jpg" % frame_i)
+#    frame = ndimage.affine_transform(
+#        frame, [1 - s, 1 - s, 1], [h * s / 2, w * s / 2, 0], order=1
+#    )
+#    frame_i += 1
 
-frame_i = 0
-h, w = frame.shape[:2]
-s = 0.05                # Scaling coefficient
-for i in range(100):
-    frame = deepdream(net, frame)
-    PIL.Image.fromarray(numpy.uint8(frame)).save("frames/%04d.jpg" % frame_i)
-    frame = ndimage.affine_transform(
-        frame, [1 - s, 1 - s, 1], [h * s / 2, w * s / 2, 0], order=1
-    )
-    frame_i += 1
+guide = numpy.float32(PIL.Image.open(guide))
+end = 'inception_3b/output'
+
+h, w = guide.shape[:2]
+src, dst = net.blobs['data'], net.blobs[end]
+src.reshape(1, 3, h, w)
+src.data[0] = preprocess(net, guide)
+net.forward(end=end)
+guide_features = dst.data[0].copy()
+
+def objective_guide(dst):
+    '''
+    Instead of maximizing the L2-norm of current image activations, we try to
+    maximize the dot-products between activations of current image, and their
+    best matching correspondences from the guide image.
+    '''
+    x, y = dst.data[0].copy(), guide_features
+    ch = x.shape[0]
+    x = x.reshape(ch, -1)
+    y = y.reshape(ch, -1)
+    A = x.T.dot(y)          # Matrix of dot-products with guide features
+
+    # Select the ones that match best
+    dst.diff[0].reshape(ch, -1)[:] = y[:, A.argmax(1)]
+
+img = numpy.float32(PIL.Image.open(initial))
+result = deepdream(net, img, end=end, objective=objective_guide)
+PIL.Image.fromarray(numpy.uint8(result)).save("frames/new.jpg")

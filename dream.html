@@ -31,7 +31,8 @@
 			a:active { text-decoration: none; color: #dddddd; }
 
 			body { color: #aaaaaa; background-color: #222222; overflow-y:auto; text-align: left; margin: 0px; font-family: serif; }
-			img { width: 100%; border: solid #444444; }
+			img { width: calc(100% - 6px); border: solid #444444; }
+			p { font-size: 130%; }
 
 			.subhead { text-align: center; margin-top: -10px; }
 		</style>
@@ -40,6 +41,15 @@
 
 		<script src="https://code.jquery.com/jquery-latest.js" type="text/javascript"></script>
 		<script type="text/javascript">
+			document.addEventListener("DOMContentLoaded", function(event) {
+				// http://stackoverflow.com/questions/1248081/get-the-browser-viewport-dimensions-with-javascript
+				var width = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+				if (width < document.getElementById('content').offsetWidth) {
+					// Resizes the content window to be smaller if viewed on a small screen.
+					document.getElementById('content').style.width = width;
+				}
+			});
+
 			var dir = "dream/";
 			var gallery = new Array();
 			var current = 0;
@@ -60,7 +70,7 @@
 					});
 
 					rotateImages();
-					setInterval("rotateImages()", 2000);
+					setInterval("rotateImages()", 1000);
 					$("#latest").attr("src", gallery[gallery.length - 1]);
 				}
 			});
@@ -70,7 +80,7 @@
 		<div id="title-bar">
 			<div id="title">Dreams</div>
 			<div class="subhead">
-				<p><a href="projects.html">Projects</a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <a href="/github">GitHub</a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <a href="http://blog.spurll.com">Blog</a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <a href="/twitter">Twitter</a></p>
+				<p><a href="index.html">Home</a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <a href="/github">GitHub</a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <a href="http://blog.spurll.com">Blog</a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <a href="/twitter">Twitter</a></p>
 			</div>
 		</div>
 		<div id="content">
